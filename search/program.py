@@ -1,8 +1,9 @@
 # COMP30024 Artificial Intelligence, Semester 1 2026
 # Project Part A: Single Player Cascade
 
-from .core import CellState, Coord, Direction, Action, MoveAction, EatAction, CascadeAction
+from .core import CellState, Coord, Direction, Action, MoveAction, EatAction, CascadeAction, PlayerColor, BOARD_N
 from .utils import render_board
+from .collections import deque
 
 
 def search(
@@ -31,16 +32,34 @@ def search(
     # Do some impressive AI stuff here to find the solution...
     # ...
     # ... (your solution goes here!)
-    # ...
+    # Using BFS to find shortest path to goal
+    if goal_state(board):
+        return []
 
+    queue = deque([(board,[])])
+    visited = {state_to_tuple(board)}
+
+    while queue:
+        current_board, path = queue.popleft()
+        for action in legal_actions(current_board, PlayerColor.RED):
+            # WIP apply the action 
+            # next_board = apply_action()
+            hash_state = state_to_tuple(next_board)
+            if hash_state not in visited:
+                if goal_state(next_board):
+                    return path + [action]
+                visited.add(hash_state)
+                queue.append((next_board, path + [action])) 
+
+    return None
     # Here we're returning "hardcoded" actions as an example of the expected
     # output format. Of course, you should instead return the result of your
     # search algorithm. Remember: if no solution is possible for a given input,
     # return `None` instead of a list.
-    return [
-        MoveAction(Coord(3, 3), Direction.Down),
-        EatAction(Coord(4, 3), Direction.Down),
-    ]
+    #return [
+        #MoveAction(Coord(3, 3), Direction.Down),
+        #EatAction(Coord(4, 3), Direction.Down),
+    #]
 
 def state_to_tuple(board: dict[Coord, CellState]) -> tuple:
     state_list = []
@@ -60,3 +79,31 @@ def copy_board(board: dict[Coord, CellState]) -> dict[Coord, CellState]:
         new_board[coord] = board[coord]
 
     return new_board
+
+def goal_state(board: dict[Coord, CellState]) -> bool:
+    # returns true if no more blue pieces on the board
+    return not any(s.color == PlayerColor.BLUE for s in board.values())
+
+def legal_actions(board: dict[Coord, CellState], color: PlayerColor) -> list[Action]:
+    # generates valid moves for the player
+    actions = []
+    for coord, state in board.items():
+        if state.color != color:
+            continue
+    
+        for d in Direction:
+            destination = coord + d
+            on_board = 0 <= destination.r < BOARD_N and 0 <= destination.c < BOARD_N
+
+            if on_board:
+                target = board.get(destination)
+                if target is None or target.color == color:
+                    actions.append(MoveAction(coord, d))
+                elif target.color != color and state.height >= target.height:
+                    actions.append(EatAction(coord, d))
+            
+            if state.height > 1:
+                actions.append(CascadeAction(coord, d))
+
+
+    return actions
