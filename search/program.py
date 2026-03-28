@@ -42,7 +42,7 @@ def search(
     while queue:
         current_board, path = queue.popleft()
         for action in legal_actions(current_board, PlayerColor.RED): 
-            next_board = apply_action()
+            next_board = apply_action(current_board, action)
             hash_state = state_to_tuple(next_board)
             if hash_state not in visited:
                 if goal_state(next_board):
