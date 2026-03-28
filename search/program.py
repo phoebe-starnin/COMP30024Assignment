@@ -91,19 +91,19 @@ def legal_actions(board: dict[Coord, CellState], color: PlayerColor) -> list[Act
             continue
     
         for d in Direction:
-            destination = coord + d
-            on_board = 0 <= destination.r < BOARD_N and 0 <= destination.c < BOARD_N
+            try:
+                target = coord + d
+                target_cell = board.get(target)
 
-            if on_board:
-                target = board.get(destination)
                 if target is None or target.color == color:
                     actions.append(MoveAction(coord, d))
-                elif target.color != color and state.height >= target.height:
+                elif target_cell.color != color and state.height >= target_cell.height:
                     actions.append(EatAction(coord, d))
-            
-            if state.height > 1:
+            except ValueError:
+                continue
+        if state.height >1:
+            for d in Direction:
                 actions.append(CascadeAction(coord, d))
-
 
     return actions
 
