@@ -3,7 +3,7 @@
 
 from .core import CellState, Coord, Direction, Action, MoveAction, EatAction, CascadeAction, PlayerColor, BOARD_N
 from .utils import render_board
-from .collections import deque
+from collections import deque
 
 
 def search(
@@ -41,9 +41,8 @@ def search(
 
     while queue:
         current_board, path = queue.popleft()
-        for action in legal_actions(current_board, PlayerColor.RED):
-            # WIP apply the action 
-            # next_board = apply_action()
+        for action in legal_actions(current_board, PlayerColor.RED): 
+            next_board = apply_action()
             hash_state = state_to_tuple(next_board)
             if hash_state not in visited:
                 if goal_state(next_board):
@@ -107,3 +106,59 @@ def legal_actions(board: dict[Coord, CellState], color: PlayerColor) -> list[Act
 
 
     return actions
+
+def apply_action(board: dict[Coord, CellState], action: Action) -> dict[Coord, CellState]:
+    new_board = copy_board(board)
+
+    if isinstance(action, MoveAction) or isinstance(action, EatAction):
+        moving_stack = new_board[action.coord]
+        del new_board[action.coord]
+
+        target_coord = action.coord + action.direction
+
+        if isinstance(action, MoveAction) and target_coord in new_board:
+            existing_stack = new_board[target_coord]
+            new_board[target_coord] = CellState(
+                moving_stack.color,
+                moving_stack.height + existing_stack.height
+            )
+        else:
+            new_board[target_coord] = moving_stack
+
+    elif isinstance(action, CascadeAction):
+        origin_stack = new_board[action.coord]
+        del new_board[action.coord]
+
+        h = origin_stack.height
+
+        for i in range(1, h + 1):
+            try:
+                landing_site = action.coord + (action.direction * i)
+            except ValueError:
+                continue
+
+            if 0 <= landing_site.r < BOARD_N and 0 <= landing_site.c < BOARD_N:
+                if landing_site in new_board:
+                    push_chain = []
+                    current_pos = landing_site
+
+                    while current_pos in new_board:
+                        push_chain.append((current_pos, new_board[current_pos]))
+                        del new_board[current_pos]
+
+                        try:
+                            current_pos = current_pos + action.direction
+                        except ValueError:
+                            break
+
+                    for old_pos, stack in reversed(push_chain):
+                        try:
+                            new_pos = old_pos + action.direction
+                            if 0 <= new_pos.r < BOARD_N and 0 <= new_pos.c < BOARD_N:
+                                new_board[new_pos] = stack
+                        except ValueError:
+                            pass
+
+                new_board[landing_site] = CellState(origin_stack.color, 1)
+
+    return new_board
