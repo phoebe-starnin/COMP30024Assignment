@@ -95,14 +95,13 @@ def legal_actions(board: dict[Coord, CellState], color: PlayerColor) -> list[Act
                 target = coord + d
                 target_cell = board.get(target)
 
-                if target is None or target.color == color:
+                if target_cell is None or target_cell.color == color:
                     actions.append(MoveAction(coord, d))
                 elif target_cell.color != color and state.height >= target_cell.height:
                     actions.append(EatAction(coord, d))
             except ValueError:
-                continue
-        if state.height >1:
-            for d in Direction:
+                pass
+            if state.height >1:
                 actions.append(CascadeAction(coord, d))
 
     return actions
@@ -133,7 +132,10 @@ def apply_action(board: dict[Coord, CellState], action: Action) -> dict[Coord, C
 
         for i in range(1, h + 1):
             try:
-                landing_site = action.coord + (action.direction * i)
+                # landing_site = action.coord + (action.direction * i)
+                new_r = action.coord.r + (action.direction.r * i)
+                new_c = action.coord.c + (action.direction.c * i)
+                landing_site = Coord(new_r, new_c)
             except ValueError:
                 continue
 
